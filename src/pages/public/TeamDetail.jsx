@@ -76,6 +76,7 @@ export default function TeamDetail() {
   }, [matches, teamId]);
 
   function phaseLabel(match) {
+    if (match.phase === "quarterfinal") return "Cuartos";
     if (match.phase === "semifinal") return "Semifinal";
     if (match.phase === "final") return "Final";
     return match.group ? `Grupo ${match.group}` : "Fase de grupos";

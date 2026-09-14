@@ -109,14 +109,28 @@ export default function Referee() {
     loadMatches();
   }
 
-  function updateScore(homeScore, awayScore) {
-    setSelectedMatch((current) => ({
-      ...current,
+  async function updateScore(homeScore, awayScore) {
+  const homeFouls = selectedMatch.homeFouls || 0;
+  const awayFouls = selectedMatch.awayFouls || 0;
+
+  setSelectedMatch((current) => ({
+    ...current,
+    homeScore,
+    awayScore,
+  }));
+
+  try {
+    await updateMatchStats(
+      selectedMatch.id,
       homeScore,
       awayScore,
-    }));
+      homeFouls,
+      awayFouls
+    );
+  } catch (error) {
+    console.error("Error actualizando el marcador:", error);
   }
-
+}
   function homePlus() {
     updateScore(
       selectedMatch.homeScore + 1,
@@ -179,6 +193,7 @@ export default function Referee() {
   }
 
   function phaseLabel(match) {
+    if (match.phase === "quarterfinal") return "Cuartos";
     if (match.phase === "semifinal") return "Semifinal";
     if (match.phase === "final") return "Final";
     return match.group ? `Grupo ${match.group}` : "Fase de grupos";
@@ -532,6 +547,7 @@ function MatchCard({
   icon,
 }) {
   function phaseLabel(match) {
+    if (match.phase === "quarterfinal") return "Cuartos";
     if (match.phase === "semifinal") return "Semifinal";
     if (match.phase === "final") return "Final";
     return match.group ? `Grupo ${match.group}` : "Fase de grupos";

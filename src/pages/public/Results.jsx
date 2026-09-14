@@ -16,8 +16,8 @@ import { getTeams } from "@/services/teamService";
 
 export default function Results() {
   const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [teamsMap, setTeamsMap] = useState({});
+  const [loading, setLoading] = useState(true);
 
   const [category, setCategory] = useState("all");
   const [phase, setPhase] = useState("all");
@@ -32,53 +32,65 @@ export default function Results() {
 
     try {
       const [matchesData, teamsData] = await Promise.all([
-  getMatches(),
-  getTeams(),
-]);
+        getMatches(),
+        getTeams(),
+      ]);
 
-matchesData.sort((a, b) => a.time.localeCompare(b.time));
+      matchesData.sort((a, b) =>
+        (b.time || "").localeCompare(a.time || "")
+      );
 
-const map = {};
-teamsData.forEach((team) => {
-  map[team.id] = team;
-});
+      const map = {};
 
-setMatches(matchesData);
-setTeamsMap(map);
+      teamsData.forEach((team) => {
+        map[team.id] = team;
+      });
+
+      setMatches(matchesData);
+      setTeamsMap(map);
     } catch (error) {
-      console.error(error);
+      console.error("Error cargando resultados:", error);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
-
-  const finishedMatches = useMemo(() => {
-    return matches.filter((match) => match.status === "finished");
-  }, [matches]);
 
   const categories = useMemo(() => {
     return [
       ...new Set(
-        finishedMatches
+        matches
           .map((match) => match.category)
           .filter(Boolean)
       ),
     ].sort();
-  }, [finishedMatches]);
+  }, [matches]);
 
   const groups = useMemo(() => {
     return [
       ...new Set(
-        finishedMatches
-          .filter((match) => category === "all" || match.category === category)
-          .filter((match) => match.phase === "groups")
-          .map((match) => match.group || "Único")
+        matches
+          .filter(
+            (match) =>
+              category === "all" ||
+              match.category === category
+          )
+          .filter(
+            (match) =>
+              match.phase === "groups"
+          )
+          .map(
+            (match) =>
+              match.group || "Único"
+          )
       ),
     ].sort();
-  }, [finishedMatches, category]);
+  }, [matches, category]);
 
   const filteredMatches = useMemo(() => {
-    return finishedMatches.filter((match) => {
+    return matches.filter((match) => {
+      const finishedOk =
+        match.status === "finished";
+
       const categoryOk =
         category === "all" ||
         match.category === category;
@@ -92,9 +104,19 @@ setTeamsMap(map);
         group === "all" ||
         (match.group || "Único") === group;
 
-      return categoryOk && phaseOk && groupOk;
+      return (
+        finishedOk &&
+        categoryOk &&
+        phaseOk &&
+        groupOk
+      );
     });
-  }, [finishedMatches, category, phase, group]);
+  }, [
+    matches,
+    category,
+    phase,
+    group,
+  ]);
 
   return (
     <PublicLayout>
@@ -109,7 +131,13 @@ setTeamsMap(map);
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <div
+          className={`grid gap-4 mb-8 ${
+            phase === "groups"
+              ? "md:grid-cols-3"
+              : "md:grid-cols-2"
+          }`}
+        >
           <Select
             value={category}
             onValueChange={(value) => {
@@ -127,7 +155,10 @@ setTeamsMap(map);
               </SelectItem>
 
               {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
+                <SelectItem
+                  key={cat}
+                  value={cat}
+                >
                   {cat}
                 </SelectItem>
               ))}
@@ -154,8 +185,12 @@ setTeamsMap(map);
                 Fase de grupos
               </SelectItem>
 
+              <SelectItem value="quarterfinal">
+                Cuartos de final
+              </SelectItem>
+
               <SelectItem value="semifinal">
-                Semifinal
+                Semifinales
               </SelectItem>
 
               <SelectItem value="final">
@@ -179,8 +214,13 @@ setTeamsMap(map);
                 </SelectItem>
 
                 {groups.map((grp) => (
-                  <SelectItem key={grp} value={grp}>
-                    Grupo {grp}
+                  <SelectItem
+                    key={grp}
+                    value={grp}
+                  >
+                    {grp === "Único"
+                      ? "Grupo único"
+                      : `Grupo ${grp}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -194,9 +234,9 @@ setTeamsMap(map);
           </div>
         ) : (
           <PublicMatchesTable
-  matches={filteredMatches}
-  teamsMap={teamsMap}
-/>
+            matches={filteredMatches}
+            teamsMap={teamsMap}
+          />
         )}
       </div>
     </PublicLayout>

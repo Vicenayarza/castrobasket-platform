@@ -41,6 +41,7 @@ export default function PublicMatchCard({
   function phaseLabel() {
     if (match.phase === "semifinal") return "Semifinal";
     if (match.phase === "final") return "Final";
+    if (match.phase === "quarterfinal") return "Cuartos";
     return match.group ? `Grupo ${match.group}` : "Fase de grupos";
   }
 

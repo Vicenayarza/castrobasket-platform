@@ -13,7 +13,7 @@ import { getDashboardData } from "@/services/dashboardService";
 
 export default function Home() {
   const [dashboard, setDashboard] = useState(null);
-  const TOTAL_PLAYERS = 160;
+  const TOTAL_PLAYERS = 227;
 
   useEffect(() => {
     load();

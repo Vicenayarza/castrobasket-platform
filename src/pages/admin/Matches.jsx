@@ -5,6 +5,7 @@ import PageHeader from "@/components/layout/PageHeader";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PlayoffsDialog from "@/components/matches/PlayoffsDialog";
 
 import MatchesTable from "@/components/matches/MatchesTable";
 import NewMatchDialog from "@/components/matches/NewMatchDialog";
@@ -147,14 +148,14 @@ async function finish(match) {
         description="Gestión de partidos"
 
         action={
+  <div className="flex gap-3">
+    <PlayoffsDialog onGenerated={loadData} />
 
-          <Button onClick={() => setNewDialogOpen(true)}>
-
-            Nuevo partido
-
-          </Button>
-
-        }
+    <Button onClick={() => setNewDialogOpen(true)}>
+      Nuevo partido
+    </Button>
+  </div>
+}
 
       />
 

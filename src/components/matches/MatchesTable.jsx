@@ -49,6 +49,7 @@ export default function MatchesTable({
   function phaseLabel(match) {
     if (match.phase === "semifinal") return "Semifinal";
     if (match.phase === "final") return "Final";
+    if (match.phase === "quarterfinal") return "Cuartos";
 
     if (match.group) return `Grupo ${match.group}`;
 

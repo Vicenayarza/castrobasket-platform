@@ -1,111 +1,71 @@
 import { Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-
-import { auth, db } from "@/firebase/firebase";
 
 export default function ProtectedRoute({
-
   children,
-
   role,
-
 }) {
+  let user = null;
 
-  const [loading, setLoading] = useState(true);
+  try {
+    const storedUser = localStorage.getItem("user");
 
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-
-    const unsubscribe = onAuthStateChanged(
-
-      auth,
-
-      async (user) => {
-
-        if (!user) {
-
-          setAllowed(false);
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        const snapshot = await getDoc(
-
-          doc(db, "users", user.uid)
-
-        );
-
-        if (!snapshot.exists()) {
-
-          setAllowed(false);
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        const data = snapshot.data();
-
-        if (!data.active) {
-
-          setAllowed(false);
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        if (role && data.role !== role) {
-
-          setAllowed(false);
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        setAllowed(true);
-
-        setLoading(false);
-
-      }
-
-    );
-
-    return unsubscribe;
-
-  }, [role]);
-
-  if (loading) {
-
-    return (
-
-      <div className="flex items-center justify-center min-h-screen">
-
-        Cargando...
-
-      </div>
-
-    );
-
+    if (storedUser) {
+      user = JSON.parse(storedUser);
+    }
+  } catch (error) {
+    console.error("Error leyendo la sesión:", error);
+    localStorage.removeItem("user");
   }
 
-  if (!allowed) {
+  // No ha iniciado sesión
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
+  }
 
-    return <Navigate to="/login" replace />;
+  // El usuario está desactivado
+  if (user.active === false) {
+    localStorage.removeItem("user");
 
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
+  }
+
+  // No tiene el rol necesario
+  if (role && user.role !== role) {
+    if (user.role === "admin") {
+      return (
+        <Navigate
+          to="/admin"
+          replace
+        />
+      );
+    }
+
+    if (user.role === "referee") {
+      return (
+        <Navigate
+          to="/referee"
+          replace
+        />
+      );
+    }
+
+    return (
+      <Navigate
+        to="/"
+        replace
+      />
+    );
   }
 
   return children;
-
 }

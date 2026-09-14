@@ -16,13 +16,13 @@ import { getTeams } from "@/services/teamService";
 
 export default function Matches() {
   const [matches, setMatches] = useState([]);
+  const [teamsMap, setTeamsMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   const [category, setCategory] = useState("all");
   const [phase, setPhase] = useState("all");
   const [group, setGroup] = useState("all");
   const [status, setStatus] = useState("all");
-  const [teamsMap, setTeamsMap] = useState({});
 
   useEffect(() => {
     loadMatches();
@@ -33,24 +33,27 @@ export default function Matches() {
 
     try {
       const [matchesData, teamsData] = await Promise.all([
-  getMatches(),
-  getTeams(),
-]);
+        getMatches(),
+        getTeams(),
+      ]);
 
-matchesData.sort((a, b) => a.time.localeCompare(b.time));
+      matchesData.sort((a, b) =>
+        (a.time || "").localeCompare(b.time || "")
+      );
 
-const map = {};
-teamsData.forEach((team) => {
-  map[team.id] = team;
-});
+      const map = {};
 
-setMatches(matchesData);
-setTeamsMap(map);
+      teamsData.forEach((team) => {
+        map[team.id] = team;
+      });
+
+      setMatches(matchesData);
+      setTeamsMap(map);
     } catch (error) {
-      console.error(error);
+      console.error("Error cargando partidos:", error);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   const categories = useMemo(() => {
@@ -67,9 +70,19 @@ setTeamsMap(map);
     return [
       ...new Set(
         matches
-          .filter((match) => category === "all" || match.category === category)
-          .filter((match) => match.phase === "groups")
-          .map((match) => match.group || "Único")
+          .filter(
+            (match) =>
+              category === "all" ||
+              match.category === category
+          )
+          .filter(
+            (match) =>
+              match.phase === "groups"
+          )
+          .map(
+            (match) =>
+              match.group || "Único"
+          )
       ),
     ].sort();
   }, [matches, category]);
@@ -93,9 +106,20 @@ setTeamsMap(map);
         status === "all" ||
         match.status === status;
 
-      return categoryOk && phaseOk && groupOk && statusOk;
+      return (
+        categoryOk &&
+        phaseOk &&
+        groupOk &&
+        statusOk
+      );
     });
-  }, [matches, category, phase, group, status]);
+  }, [
+    matches,
+    category,
+    phase,
+    group,
+    status,
+  ]);
 
   return (
     <PublicLayout>
@@ -110,7 +134,13 @@ setTeamsMap(map);
           </p>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
+        <div
+          className={`grid gap-4 mb-8 ${
+            phase === "groups"
+              ? "md:grid-cols-4"
+              : "md:grid-cols-3"
+          }`}
+        >
           <Select
             value={category}
             onValueChange={(value) => {
@@ -128,7 +158,10 @@ setTeamsMap(map);
               </SelectItem>
 
               {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
+                <SelectItem
+                  key={cat}
+                  value={cat}
+                >
                   {cat}
                 </SelectItem>
               ))}
@@ -155,8 +188,12 @@ setTeamsMap(map);
                 Fase de grupos
               </SelectItem>
 
+              <SelectItem value="quarterfinal">
+                Cuartos de final
+              </SelectItem>
+
               <SelectItem value="semifinal">
-                Semifinal
+                Semifinales
               </SelectItem>
 
               <SelectItem value="final">
@@ -180,8 +217,13 @@ setTeamsMap(map);
                 </SelectItem>
 
                 {groups.map((grp) => (
-                  <SelectItem key={grp} value={grp}>
-                    Grupo {grp}
+                  <SelectItem
+                    key={grp}
+                    value={grp}
+                  >
+                    {grp === "Único"
+                      ? "Grupo único"
+                      : `Grupo ${grp}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -222,9 +264,9 @@ setTeamsMap(map);
           </div>
         ) : (
           <PublicMatchesTable
-  matches={filteredMatches}
-  teamsMap={teamsMap}
-/>
+            matches={filteredMatches}
+            teamsMap={teamsMap}
+          />
         )}
       </div>
     </PublicLayout>

@@ -1,6 +1,6 @@
 export const tournament = {
   name: "CastroBasket 3x3",
-  year: "2027",
+  year: "2026",
 
   colors: {
     primary: "#009B3A",

@@ -49,17 +49,13 @@ const menu = [
     path: "/tv",
     icon: Monitor,
   },
-  {
-    title: "Configuración",
-    path: "/admin/settings",
-    icon: Settings,
-  },
   
 {
     title: "Categorías",
-    path: "/admin/categories",
+     path: "/admin/categories",
     icon: Layers
 },
+
 ];
 
 export default function AppSidebar() {
@@ -154,7 +150,7 @@ export default function AppSidebar() {
 
           <p className="text-sm text-slate-500">
 
-            Edición 2027
+            Edición 2026
 
           </p>
 

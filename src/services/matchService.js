@@ -17,16 +17,16 @@ const matchesCollection = collection(db, "matches");
 
 /*
 |--------------------------------------------------------------------------
-| Obtener partidos
+| Obtener todos los partidos
 |--------------------------------------------------------------------------
 */
 
 export async function getMatches() {
   const snapshot = await getDocs(matchesCollection);
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
+  return snapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data(),
   }));
 }
 
@@ -37,38 +37,39 @@ export async function getMatches() {
 */
 
 export async function createMatch(match) {
-
   return await addDoc(matchesCollection, {
+    category: match.category,
 
-  category: match.category,
-  group: match.group,
- phase: match.phase || "groups",
+    group: match.group || "",
+    phase: match.phase || "groups",
+    playoffOrder: match.playoffOrder ?? null,
 
-  homeTeamId: match.homeTeamId,
-  homeTeamName: match.homeTeamName,
+    homeTeamId: match.homeTeamId,
+    homeTeamName: match.homeTeamName,
 
-  awayTeamId: match.awayTeamId,
-  awayTeamName: match.awayTeamName,
+    awayTeamId: match.awayTeamId,
+    awayTeamName: match.awayTeamName,
 
-  refereeId: match.refereeId,
-  refereeName: match.refereeName,
+    refereeId: match.refereeId,
+    refereeName: match.refereeName,
 
-  courtId: match.courtId,
-  courtName: match.courtName,
+    courtId: match.courtId,
+    courtName: match.courtName,
 
-  time: match.time,
+    time: match.time,
 
-  homeScore: 0,
-  awayScore: 0,
-  homeFouls: 0,
-awayFouls: 0,
+    homeScore: 0,
+    awayScore: 0,
 
-  status: "pending",
+    homeFouls: 0,
+    awayFouls: 0,
 
-  createdAt: serverTimestamp(),
+    coinWinner: null,
 
-});
+    status: "pending",
 
+    createdAt: serverTimestamp(),
+  });
 }
 
 /*
@@ -78,48 +79,53 @@ awayFouls: 0,
 */
 
 export async function updateMatch(id, match) {
-
   return await updateDoc(
     doc(db, "matches", id),
     match
   );
-
 }
 
 /*
 |--------------------------------------------------------------------------
-| Cambiar estado
+| Cambiar estado del partido
 |--------------------------------------------------------------------------
 */
 
 export async function updateMatchStatus(id, status) {
-
-  await updateDoc(
-
+  return await updateDoc(
     doc(db, "matches", id),
-
     {
       status,
     }
-
   );
-
 }
 
-export async function updateMatchScore(id, homeScore, awayScore) {
+/*
+|--------------------------------------------------------------------------
+| Actualizar marcador
+|--------------------------------------------------------------------------
+*/
 
-  await updateDoc(
-
+export async function updateMatchScore(
+  id,
+  homeScore,
+  awayScore
+) {
+  return await updateDoc(
     doc(db, "matches", id),
-
     {
-      homeScore,
-      awayScore,
+      homeScore: Number(homeScore) || 0,
+      awayScore: Number(awayScore) || 0,
     }
-
   );
-
 }
+
+/*
+|--------------------------------------------------------------------------
+| Actualizar marcador y faltas
+|--------------------------------------------------------------------------
+*/
+
 export async function updateMatchStats(
   id,
   homeScore,
@@ -130,15 +136,33 @@ export async function updateMatchStats(
   return await updateDoc(
     doc(db, "matches", id),
     {
-      homeScore,
-      awayScore,
-      homeFouls,
-      awayFouls,
+      homeScore: Number(homeScore) || 0,
+      awayScore: Number(awayScore) || 0,
+
+      homeFouls: Number(homeFouls) || 0,
+      awayFouls: Number(awayFouls) || 0,
     }
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| Iniciar partido guardando el ganador del sorteo
+|--------------------------------------------------------------------------
+*/
 
+export async function startMatchWithCoinWinner(
+  id,
+  coinWinner
+) {
+  return await updateDoc(
+    doc(db, "matches", id),
+    {
+      status: "live",
+      coinWinner,
+    }
+  );
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -147,46 +171,58 @@ export async function updateMatchStats(
 */
 
 export async function deleteMatch(id) {
-
   return await deleteDoc(
     doc(db, "matches", id)
   );
-
 }
-export function subscribeMatches(callback) {
 
-  const q = query(
-    collection(db, "matches"),
+/*
+|--------------------------------------------------------------------------
+| Escuchar partidos en tiempo real
+|--------------------------------------------------------------------------
+*/
+
+export function subscribeMatches(callback, onError) {
+  const matchesQuery = query(
+    matchesCollection,
     orderBy("time")
   );
 
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(
+    matchesQuery,
+    (snapshot) => {
+      const matches = snapshot.docs.map(
+        (document) => ({
+          id: document.id,
+          ...document.data(),
+        })
+      );
 
-    const matches = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+      callback(matches);
+    },
+    (error) => {
+      console.error(
+        "Error escuchando partidos en tiempo real:",
+        error
+      );
 
-    callback(matches);
-
-  });
-
+      if (onError) {
+        onError(error);
+      }
+    }
+  );
 }
-export async function getFinishedMatches() {
 
+/*
+|--------------------------------------------------------------------------
+| Obtener partidos finalizados
+|--------------------------------------------------------------------------
+*/
+
+export async function getFinishedMatches() {
   const matches = await getMatches();
 
   return matches.filter(
     (match) => match.status === "finished"
-  );
-
-}
-export async function startMatchWithCoinWinner(id, coinWinner) {
-  return await updateDoc(
-    doc(db, "matches", id),
-    {
-      status: "live",
-      coinWinner,
-    }
   );
 }
